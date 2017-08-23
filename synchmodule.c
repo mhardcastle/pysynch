@@ -331,17 +331,30 @@ double blackb(double nu) {
   return(8*PI*PLANCK*nu*nu*nu/(V_C*V_C*V_C*(exp(PLANCK*nu/(BOLTZMANN*T))-1)));
 }
 
+double kleinnishina(double nu) {
+
+  /* approximately compute the Klein-Nishina correction given by
+     Rybicki & Lightman eq. 7.5. We assume that in the frame of the
+     electron the energy is gamma*h*nu */
+
+  double x,t;
+
+  x=eglob*PLANCK*nu/M2C4;
+  if (x<1e-3) return 1.0;
+  t=log(1+2*x);
+  return 0.75*((1+x)/(x*x*x)*((2*x*(1+x)/(1+2*x))-t)+((1/(2*x))*t)-(1+3*x)/((1+2*x)*(1+2*x)));
+}
 
 double cmb_ic_inner_int(double nu) {
   static double x,fx;
   /*  printf("%g %g %g\n",freq_ic,nu,eglob); */
-  x=freq_ic*(M_EL*M_EL*V_C*V_C*V_C*V_C)/(4.0*nu*eglob*eglob);
+  x=freq_ic*M2C4/(4.0*nu*eglob*eglob);
   if (x>1) fx=0.0;
   else fx=(2.0*x*log(x))+x+1.0-(2.0*x*x);
   //printf("nu = %g, e = %g, x = %g, fx= %g\n",nu,eglob,x,fx);
   /* if ((i % 1000)==0) 
      i++; */
-  return nu*fx/(exp(PLANCK*nu/(BOLTZMANN*T))-1);
+  return kleinnishina(nu)*nu*fx/(exp(PLANCK*nu/(BOLTZMANN*T))-1);
 
 }
 
@@ -350,7 +363,7 @@ double cmb_ic_outer_int(double e) {
   static double ii;
   eglob=e;
   /* the inner integral. For a given electron energy, integrate over the allowed range of frequency ... */
-  nu_m=freq_ic/(4.0*(e*e/(M_EL*M_EL*V_C*V_C*V_C*V_C)));
+  nu_m=freq_ic/(4.0*(e*e/M2C4));
   if (nu_m<nu_min) nu_m=nu_min;
   if (nu_m>nu_max) return 0;
   #ifdef DEBUG

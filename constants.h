@@ -12,3 +12,5 @@
 #define PARSEC 3.08568e16
 
 #define JANSKY 1.0e-26
+
+#define M2C4 (M_EL*M_EL*V_C*V_C*V_C*V_C)
