@@ -106,9 +106,7 @@ double ng_pow(double g) {
 double ne_pow(double e) {
 
   /* ne(E) dE is the number of electrons with energy between E and E+dE */
-
   /* delta is the power-law index */
-  /* normalise to 1 at some arbitrary energy */
 
   if ((e<EMIN) || (e>EMAX)) return 0.0;
   else return n0_ext*pow(e,-power);
@@ -321,6 +319,79 @@ double emiss_n(double n0, double b, double nu_arg) {
   return synchint();
 }
 
+/////////////////////// INVERSE-COMPTON //////////////////////////
+
+float nu_min=0, nu_max=0;
+float freq_ic=0.0;
+float ialpha;
+double eglob;
+float T;
+
+double blackb(double nu) {
+  return(8*PI*PLANCK*nu*nu*nu/(V_C*V_C*V_C*(exp(PLANCK*nu/(BOLTZMANN*T))-1)));
+}
+
+
+double cmb_ic_inner_int(double nu) {
+  static double x,fx;
+  /*  printf("%g %g %g\n",freq_ic,nu,eglob); */
+  x=freq_ic*(M_EL*M_EL*V_C*V_C*V_C*V_C)/(4.0*nu*eglob*eglob);
+  if (x>1) fx=0.0;
+  else fx=(2.0*x*log(x))+x+1.0-(2.0*x*x);
+  //printf("nu = %g, e = %g, x = %g, fx= %g\n",nu,eglob,x,fx);
+  /* if ((i % 1000)==0) 
+     i++; */
+  return nu*fx/(exp(PLANCK*nu/(BOLTZMANN*T))-1);
+
+}
+
+double cmb_ic_outer_int(double e) {
+  static double nu_m;
+  static double ii;
+  eglob=e;
+  /* the inner integral. For a given electron energy, integrate over the allowed range of frequency ... */
+  nu_m=freq_ic/(4.0*(e*e/(M_EL*M_EL*V_C*V_C*V_C*V_C)));
+  if (nu_m<nu_min) nu_m=nu_min;
+  if (nu_m>nu_max) return 0;
+  #ifdef DEBUG
+      printf("nu_min = %g nu_max = %g\n",nu_m,nu_max);
+  #endif
+  ii=ne(eglob)*gsl_integ(cmb_ic_inner_int,nu_m,nu_max,w1)/(eglob*eglob);
+  #ifdef DEBUG
+  printf("n(e) = %g energy = %g gamma = %g i = %g\n",ne(eglob),e,e/(M_EL*V_C*V_C),ii);
+  #endif
+  return ii;
+}
+
+double cmb_ic_emissivity(double n0, double nu, double redshift) {
+  double emax,emin,v;
+  T=2.735*(1.0+redshift);
+  emax=EMAX;
+  #ifdef DEBUG
+  printf("Temperature of the CMB is %f K\n",T);
+  #endif
+  nu_max=1.0e13*T;
+  nu_min=1.0e8*T;
+
+  freq_ic=nu;
+  n0_ext=n0;
+  emin=sqrt(freq_ic/(4*nu_max));
+  if (emin<gmin) emin=gmin;
+  if (emin>gmax) {
+    fprintf(stderr,"no valid electrons in use!\n");
+  }
+  emin*=M_EL*V_C*V_C;
+  //printf("emin is %g emax %g\n",emin,emax);
+  v=6*PI*PLANCK*THOMSON*M_EL*M_EL*V_C*V_C*freq_ic;
+  v*=gsl_integ(cmb_ic_outer_int,emin,emax,w2);
+  return v;
+}
+
+void set_minmax_globals(void) {
+  EMIN=gmin*M_EL*V_C*V_C;
+  EMAX=gmax*M_EL*V_C*V_C;
+}
+
 /////////////////////// PYTHON API ///////////////////////////////
 
 static PyObject *synch_setage(PyObject *self, PyObject *args) {
@@ -332,8 +403,7 @@ static PyObject *synch_setage(PyObject *self, PyObject *args) {
 static PyObject *synch_setspectrum(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "ddd", &gmin, &gmax, &power))
     return NULL;
-  EMIN=gmin*M_EL*V_C*V_C;
-  EMAX=gmax*M_EL*V_C*V_C;
+  set_minmax_globals();
   return Py_BuildValue("d", power);
 }
 
@@ -349,6 +419,22 @@ static PyObject *synch_emiss(PyObject *self, PyObject *args) {
   printf("Calling emiss_n with values %g, %g, %g\n",norm,bfield,nu);
 #endif
   emiss=emiss_n(norm,bfield,nu);
+#ifdef DEBUG
+  printf("Value returned was %g\n",emiss);
+#endif
+  return Py_BuildValue("d", emiss);
+}
+
+static PyObject *cmb_ic_emiss(PyObject *self, PyObject *args) {
+  const double norm, nu, z;
+  double emiss;
+
+  if (!PyArg_ParseTuple(args, "ddd", &norm, &nu, &z))
+    return NULL;
+#ifdef DEBUG
+  printf("Calling cmb_ic_emissivity with values %g, %g, %g\n",norm,nu,z);
+#endif
+  emiss=cmb_ic_emissivity(norm,nu,z);
 #ifdef DEBUG
   printf("Value returned was %g\n",emiss);
 #endif
@@ -378,6 +464,8 @@ static PyMethodDef SynchMethods[] = {
      "Find F(x)."},
     {"emiss",  synch_emiss, METH_VARARGS,
      "Calculate an emissivity."},
+    {"cmb_ic_emiss",  cmb_ic_emiss, METH_VARARGS,
+     "Calculate an IC/CMB emissivity."},
     {"setage",  synch_setage, METH_VARARGS,
      "Set the synchrotron age to use (s) and ageing field (T)."},
     {"setspectrum",  synch_setspectrum, METH_VARARGS,
@@ -403,12 +491,12 @@ PyMODINIT_FUNC initsynch(void) {
   #endif
   makefx();
 
-  // these numeric parameters and the spectral function to be used should be changeable by the user
+  // these numeric parameters and the spectral function to be used are
+  // changeable by the user: set some defaults
 
   gmin=10;
   gmax=100000;
-  EMIN=gmin*M_EL*V_C*V_C;
-  EMAX=gmax*M_EL*V_C*V_C;
+  set_minmax_globals();
   power=2.2;
 
   ne=ne_age_jp;
