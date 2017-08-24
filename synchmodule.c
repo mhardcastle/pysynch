@@ -61,13 +61,6 @@ double gsl_integ_iu(double f(double),double x1,gsl_integration_workspace *w) {
   return res;
 }
 
-#define NUSE1 5
-#define NUSE2 5
-#define EPS 1.0e-10
-#define FPMIN 1.0e-30
-#define MAXIT 10000
-#define XMIN 2.0
-
 #define XF1 1.0e-4
 #define XF2 0.22e+2
 #define INFIN  1.0e2
@@ -270,7 +263,7 @@ double synchpl(void) {
   if (emin<EMIN) emin=EMIN;
   if (emax>EMAX) emax=EMAX;
   if (age>0.0) emax=age_emax(emax);
-  //  else emax=EMAX;
+
   /* printf("Using min energy %lg\n",emin); */
   /*  printf("in synchpl, emin = %g, emax = %g\n",emin,EMAX); */
   if (emin>emax) {
@@ -379,22 +372,23 @@ double cmb_ic_outer_int(double e) {
 double cmb_ic_emissivity(double n0, double nu, double redshift) {
   double emax,emin,v;
   T=2.735*(1.0+redshift);
-  emax=EMAX;
   #ifdef DEBUG
   printf("Temperature of the CMB is %f K\n",T);
   #endif
-  nu_max=1.0e13*T;
-  nu_min=1.0e8*T;
+  nu_max=1.0e14*T;
+  nu_min=1.0e6*T;
 
   freq_ic=nu;
   n0_ext=n0;
+  emax=age_emax(EMAX);
+
   emin=sqrt(freq_ic/(4*nu_max));
   if (emin<gmin) emin=gmin;
   if (emin>gmax) {
     fprintf(stderr,"no valid electrons in use!\n");
   }
   emin*=M_EL*V_C*V_C;
-  //printf("emin is %g emax %g\n",emin,emax);
+
   v=6*PI*PLANCK*THOMSON*M_EL*M_EL*V_C*V_C*freq_ic;
   v*=gsl_integ(cmb_ic_outer_int,emin,emax,w2);
   return v;
