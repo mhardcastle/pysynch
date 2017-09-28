@@ -298,6 +298,14 @@ double synchint(void) {
   return 0.5*gsl_integ(synchin,0.0,PI,w2);
 }
 
+double lossin(double e) {
+  return e*e*ne(e);
+}
+
+double lossint(void) {
+  return (4.0/3.0)*THOMSON*BFIELD*BFIELD/(2*MU_0*M_EL*M_EL*V_C*V_C*V_C)*gsl_integ(lossin,EMIN,EMAX,w2);
+}
+
 double emiss_n(double n0, double b, double nu_arg) {
 
   /* similar to emiss_a, but the parameters of the electron
@@ -310,6 +318,16 @@ double emiss_n(double n0, double b, double nu_arg) {
   printf("Calling synchint with %g %g %g\n",n0_ext,BFIELD,nu);
 #endif
   return synchint();
+}
+
+double loss_n(double n0, double b) {
+
+  n0_ext=n0;
+  BFIELD=b;
+#ifdef DEBUG
+  printf("Calling lossint with %g %g\n",n0_ext,BFIELD);
+#endif
+  return lossint();
 }
 
 /////////////////////// INVERSE-COMPTON //////////////////////////
@@ -432,6 +450,22 @@ static PyObject *synch_emiss(PyObject *self, PyObject *args) {
   return Py_BuildValue("d", emiss);
 }
 
+static PyObject *synch_loss(PyObject *self, PyObject *args) {
+  const double norm, bfield;
+  double loss;
+
+  if (!PyArg_ParseTuple(args, "dd", &norm, &bfield))
+    return NULL;
+#ifdef DEBUG
+  printf("Calling loss_n with values %g, %g\n",norm,bfield);
+#endif
+  loss=loss_n(norm,bfield);
+#ifdef DEBUG
+  printf("Value returned was %g\n",loss);
+#endif
+  return Py_BuildValue("d", loss);
+}
+
 static PyObject *cmb_ic_emiss(PyObject *self, PyObject *args) {
   const double norm, nu, z;
   double emiss;
@@ -471,6 +505,8 @@ static PyMethodDef SynchMethods[] = {
      "Find F(x)."},
     {"emiss",  synch_emiss, METH_VARARGS,
      "Calculate an emissivity."},
+    {"loss",  synch_loss, METH_VARARGS,
+     "Calculate a loss rate"},
     {"cmb_ic_emiss",  cmb_ic_emiss, METH_VARARGS,
      "Calculate an IC/CMB emissivity."},
     {"setage",  synch_setage, METH_VARARGS,
