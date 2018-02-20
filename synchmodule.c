@@ -398,7 +398,8 @@ double cmb_ic_emissivity(double n0, double nu, double redshift) {
 
   freq_ic=nu;
   n0_ext=n0;
-  emax=age_emax(EMAX);
+  emax=EMAX;
+  if (age>0) emax=age_emax(EMAX);
 
   emin=sqrt(freq_ic/(4*nu_max));
   if (emin<gmin) emin=gmin;
@@ -417,11 +418,37 @@ void set_minmax_globals(void) {
   EMAX=gmax*M_EL*V_C*V_C;
 }
 
+void set_simple_powerlaw(void) {
+  // reset anything that involves an age
+  ne=ne_pow;
+  age=0;
+  age_emax=NULL;
+  ageb=0;
+  ebrd=0;
+}
+
 /////////////////////// PYTHON API ///////////////////////////////
+
+static PyObject *synch_pow(PyObject *self, PyObject *args) {
+  set_simple_powerlaw();
+  return Py_BuildValue("d", power);
+}
+
+static PyObject *synch_break(PyObject *self, PyObject *args) {
+  if (!PyArg_ParseTuple(args, "dd", &gbreak, &gbvalue))
+    return NULL;
+  set_simple_powerlaw();
+  EBREAK=gbreak*M_EL*V_C*V_C;
+  ebrd=pow(EBREAK,gbvalue);
+  ne=ne_break;
+  return Py_BuildValue("d", gbvalue);
+}
 
 static PyObject *synch_setage(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "dd", &age, &ageb))
     return NULL;
+  ne=ne_age_jp;
+  age_emax=age_emax_jp;
   return Py_BuildValue("d", age);
 }
 
@@ -510,7 +537,11 @@ static PyMethodDef SynchMethods[] = {
     {"cmb_ic_emiss",  cmb_ic_emiss, METH_VARARGS,
      "Calculate an IC/CMB emissivity."},
     {"setage",  synch_setage, METH_VARARGS,
-     "Set the synchrotron age to use (s) and ageing field (T)."},
+     "Use a J-P aged model with parameters of the synchrotron age to use (s) and ageing field (T)."},
+    {"setbreak",  synch_break, METH_VARARGS,
+     "Use a broken power-law model with parameters of the synchrotron break energy to use (gamma_break) and delta index."},
+    {"setpow",  synch_pow, METH_VARARGS,
+     "Use a simple power-law model"},
     {"setspectrum",  synch_setspectrum, METH_VARARGS,
      "Set the gamma_min, gamma_max and power-law index."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
@@ -542,10 +573,6 @@ PyMODINIT_FUNC initsynch(void) {
   set_minmax_globals();
   power=2.2;
 
-  ne=ne_age_jp;
-  age_emax=age_emax_jp;
-
-  ageb=1e-9;
-  age=1e7*365*86400;
-
+  set_simple_powerlaw();
+  
 }
