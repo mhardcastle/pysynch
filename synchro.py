@@ -13,9 +13,16 @@ class SynchSource(object):
     update attributes, see method docstrings for details.
     '''
 
-    def arcsec_to_metres(self,theta):
+    def _init_distances(self):
+        # scale in kpc/arcsec
         if self.scale is None:
             self.scale=1.0/(self.cosm.arcsec_per_kpc_proper(self.z).value)
+        # flux normalization
+        if self.fnorm is None:
+            self.fnorm=4*PI*(1e6*PARSEC*self.cosm.luminosity_distance(self.z).value)**2.0/(1.0+z)
+    
+    def arcsec_to_metres(self,theta):
+        self._init_distances()
         return theta*self.scale*1000.0*PARSEC
     
     def __init__(self,type='sphere',cosmology=None,z=0,cmbtemp=2.73,verbose=False,gmin=None,gmax=None,injection=None,spectrum='powerlaw',**kwargs):
@@ -78,3 +85,6 @@ class SynchSource(object):
             r[...]=synch.emiss(self.synchnorm,self.B,f)
         return it.operands[1]
     
+    def normalize(self,freq,flux,method='equipartition',**kwargs):
+        self._init.distances()
+        
