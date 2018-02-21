@@ -4,6 +4,7 @@ PI=np.pi
 PARSEC=3.08568e16
 JANSKY=1.0e-26
 V_C=299792458.0
+MU_0=4.0e-7*PI
 
 import synch
 
@@ -19,7 +20,7 @@ class SynchSource(object):
             self.scale=1.0/(self.cosm.arcsec_per_kpc_proper(self.z).value)
         # flux normalization
         if self.fnorm is None:
-            self.fnorm=4*PI*(1e6*PARSEC*self.cosm.luminosity_distance(self.z).value)**2.0/(1.0+z)
+            self.fnorm=4*PI*(1e6*PARSEC*self.cosm.luminosity_distance(self.z).value)**2.0/(1.0+self.z)
     
     def arcsec_to_metres(self,theta):
         self._init_distances()
@@ -31,7 +32,10 @@ class SynchSource(object):
         self.verbose=verbose
         # sort out cosmology. This should be an astropy cosmology object
         self.cosm=cosmology
+        # these are set up so we can easily apply a fixed
+        # non-cosmological distance later, as in synch
         self.scale=None
+        self.fnorm=None
         self.z=z
         self.type='type'
         # set up the volume
@@ -43,6 +47,10 @@ class SynchSource(object):
             self.volume=4*PI*self.rsph**3.0/3.0
         else:
             raise NotImplementedError('geometry '+type)
+
+        # beaming -- not yet implemented
+        self.doppler=1.0
+        self.dfactor=1.0
 
         # synchrotron spectrum
         self.synchnorm=1.0
@@ -85,6 +93,57 @@ class SynchSource(object):
             r[...]=synch.emiss(self.synchnorm,self.B,f)
         return it.operands[1]
     
-    def normalize(self,freq,flux,method='equipartition',**kwargs):
-        self._init.distances()
-        
+    def normalize(self,freq,flux,zeta=1.0,method='equipartition',**kwargs):
+        self._init_distances()
+        nu=freq*(1+self.z)/self.doppler
+        wem=flux*JANSKY*self.fnorm/self.volume/self.dfactor
+        # compute single-electron norm and energy density
+        self._setsynch()
+        tno=synch.intne(1)
+        print 'Total no of electrons (pre-norm) is %g m^-3' % tno
+        eln=1.0/tno
+        print 'Total no of electrons (post-norm) is %f m^-3' % synch.intne(eln)
+        ed=synch.intene(eln)
+        print 'Energy density (one electron) is %g J m^-3' % ed
+        if self.verbose:
+            print 'Wanted emission rate at %g Hz: %g W/Hz/m^3' % (nu,wem)
+        if method=='equipartition':
+            bmin,bmax=kwargs['brange']
+            print 'Emissivity (one electron) at bmin is %g' % synch.emiss(eln,bmin,nu)
+            if self.verbose: print 'Finding the B-field such that %f * B^2/mu_0 = total electron energy' % zeta
+
+            # check the bounds
+            BFIELD=bmax
+            bed=BFIELD**2.0/(2.0*MU_0)
+            norm=eln*(zeta*bed/ed)
+            print bed,ed,eln,norm
+            print bed,synch.intene(norm)
+            eu=synch.emiss(norm,BFIELD,nu);
+      
+            BFIELD=bmin;
+            bed=BFIELD**2.0/(2.0*MU_0)
+            norm=eln*(zeta*bed/ed)
+            el=synch.emiss(norm,BFIELD,nu)
+            print bed,ed,eln,norm
+      
+            print "Emission rate limits are %g -- %g W Hz^-1 m^-3" % (el,eu)
+
+            if wem<el or wem>eu:
+                raise RuntimeError('Not bracketing a root; can\'t search')
+            
+            for i in range(20):
+                BFIELD=np.exp((np.log(bmin)+np.log(bmax))/2.0)
+                bed=BFIELD**2.0/(2.0*MU_0)
+                norm=eln*(zeta*bed/ed)
+                emid=synch.emiss(norm,BFIELD,nu)
+                print bed,ed,eln,norm
+                if wem<emid:
+                    bmax=BFIELD
+                else:
+                    bmin=BFIELD
+
+            print 'Field fit %g T' % BFIELD
+            
+            print 'B-field energy density is %g J/m^3' % bed
+            print 'Normalized total no electrons is %g m^-3' % synch.intne(norm)
+            print 'Electron energy density is %g J/m^3' % synch.intene(norm)

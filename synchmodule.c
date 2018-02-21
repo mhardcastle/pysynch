@@ -189,6 +189,20 @@ double ene(double e) {
   return e*ne(e);
 }
 
+double intene(void) {
+  double emax;
+  emax=EMAX;
+  if (age>0.0) emax=age_emax(emax);
+  return gsl_integ(ene,EMIN,EMAX,w1);
+}
+
+double intne(void) {
+  double emax;
+  emax=EMAX;
+  if (age>0.0) emax=age_emax(emax);
+  return gsl_integ(ne,EMIN,EMAX,w1);
+}
+
 double ffx(double x)
 
 {
@@ -434,6 +448,22 @@ static PyObject *synch_pow(PyObject *self, PyObject *args) {
   return Py_BuildValue("d", power);
 }
 
+static PyObject *synch_intene(PyObject *self, PyObject *args) {
+  double iv;
+  if (!PyArg_ParseTuple(args, "d", &n0_ext))
+    return NULL;
+  iv=intene();
+  return Py_BuildValue("d", iv);
+}
+
+static PyObject *synch_intne(PyObject *self, PyObject *args) {
+  double iv;
+  if (!PyArg_ParseTuple(args, "d", &n0_ext))
+    return NULL;
+  iv=intne();
+  return Py_BuildValue("d", iv);
+}
+
 static PyObject *synch_break(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "dd", &gbreak, &gbvalue))
     return NULL;
@@ -536,6 +566,10 @@ static PyMethodDef SynchMethods[] = {
      "Calculate a loss rate"},
     {"cmb_ic_emiss",  cmb_ic_emiss, METH_VARARGS,
      "Calculate an IC/CMB emissivity."},
+    {"intene",  synch_intene, METH_VARARGS,
+     "Integrate E N(E)"},
+    {"intne",  synch_intne, METH_VARARGS,
+     "Integrate N(E)"},
     {"setage",  synch_setage, METH_VARARGS,
      "Use a J-P aged model with parameters of the synchrotron age to use (s) and ageing field (T)."},
     {"setbreak",  synch_break, METH_VARARGS,
