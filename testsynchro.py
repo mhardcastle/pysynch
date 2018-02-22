@@ -12,7 +12,7 @@ s=SynchSource(type='sphere',asph=10,z=0.1,cosmology=c,spectrum='powerlaw',gmin=1
 print s.volume
 print s.fnorm
 
-s.normalize(1.4,1.0,method='equipartition',brange=(1e-10,1e-8))
+s.normalize(1.4e9,1.0,method='equipartition',brange=(1e-10,1e-8))
 
 '''
 

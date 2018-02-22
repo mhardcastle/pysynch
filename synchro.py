@@ -93,57 +93,63 @@ class SynchSource(object):
             r[...]=synch.emiss(self.synchnorm,self.B,f)
         return it.operands[1]
     
-    def normalize(self,freq,flux,zeta=1.0,method='equipartition',**kwargs):
+    def normalize(self,freq,flux,zeta=1.0,method='equipartition',tol=1e-6,**kwargs):
         self._init_distances()
         nu=freq*(1+self.z)/self.doppler
         wem=flux*JANSKY*self.fnorm/self.volume/self.dfactor
         # compute single-electron norm and energy density
         self._setsynch()
         tno=synch.intne(1)
-        print 'Total no of electrons (pre-norm) is %g m^-3' % tno
+        if self.verbose: print 'Total no of electrons (pre-norm) is %g m^-3' % tno
         eln=1.0/tno
-        print 'Total no of electrons (post-norm) is %f m^-3' % synch.intne(eln)
+        if self.verbose: print 'Total no of electrons (post-norm) is %f m^-3' % synch.intne(eln)
         ed=synch.intene(eln)
-        print 'Energy density (one electron) is %g J m^-3' % ed
-        if self.verbose:
-            print 'Wanted emission rate at %g Hz: %g W/Hz/m^3' % (nu,wem)
+        if self.verbose: print 'Energy density (one electron) is %g J m^-3' % ed
+        if self.verbose: print 'Wanted emission rate at %g Hz: %g W/Hz/m^3' % (nu,wem)
         if method=='equipartition':
             bmin,bmax=kwargs['brange']
-            print 'Emissivity (one electron) at bmin is %g' % synch.emiss(eln,bmin,nu)
             if self.verbose: print 'Finding the B-field such that %f * B^2/mu_0 = total electron energy' % zeta
 
             # check the bounds
-            BFIELD=bmax
-            bed=BFIELD**2.0/(2.0*MU_0)
+            bfield=bmax
+            bed=bfield**2.0/(2.0*MU_0)
             norm=eln*(zeta*bed/ed)
-            print bed,ed,eln,norm
-            print bed,synch.intene(norm)
-            eu=synch.emiss(norm,BFIELD,nu);
+
+            eu=synch.emiss(norm,bfield,nu);
       
-            BFIELD=bmin;
-            bed=BFIELD**2.0/(2.0*MU_0)
+            bfield=bmin;
+            bed=bfield**2.0/(2.0*MU_0)
             norm=eln*(zeta*bed/ed)
-            el=synch.emiss(norm,BFIELD,nu)
-            print bed,ed,eln,norm
+            el=synch.emiss(norm,bfield,nu)
       
-            print "Emission rate limits are %g -- %g W Hz^-1 m^-3" % (el,eu)
+            if self.verbose: print "Emission rate limits are %g -- %g W Hz^-1 m^-3" % (el,eu)
 
             if wem<el or wem>eu:
                 raise RuntimeError('Not bracketing a root; can\'t search')
-            
-            for i in range(20):
-                BFIELD=np.exp((np.log(bmin)+np.log(bmax))/2.0)
-                bed=BFIELD**2.0/(2.0*MU_0)
-                norm=eln*(zeta*bed/ed)
-                emid=synch.emiss(norm,BFIELD,nu)
-                print bed,ed,eln,norm
-                if wem<emid:
-                    bmax=BFIELD
-                else:
-                    bmin=BFIELD
 
-            print 'Field fit %g T' % BFIELD
+            emid=0
+            while ((abs(emid-wem))/wem)>tol:
+                bfield=np.exp((np.log(bmin)+np.log(bmax))/2.0)
+                bed=bfield**2.0/(2.0*MU_0)
+                norm=eln*(zeta*bed/ed)
+                emid=synch.emiss(norm,bfield,nu)
+                if wem<emid:
+                    bmax=bfield
+                else:
+                    bmin=bfield
+
+            self.B=bfield
+            self.synchnorm=norm
+            self.electron_energy_density=synch.intene(norm)
+            self.bfield_energy_density=bed
+            self.total_energy_density=self.electron_energy_density+self.bfield_energy_density
+        else:
+            raise NotImplementedError('method '+method)
             
-            print 'B-field energy density is %g J/m^3' % bed
-            print 'Normalized total no electrons is %g m^-3' % synch.intne(norm)
-            print 'Electron energy density is %g J/m^3' % synch.intene(norm)
+        if self.verbose:
+            print 'Field fit %g T' % self.B
+            print 'B-field energy density is %g J/m^3' % self.bfield_energy_density
+            print 'Normalized total number density of electrons is %g m^-3' % synch.intne(norm)
+            print 'Electron energy density is %g J/m^3' % self.electron_energy_density
+            print 'Total energy density is %g J/m^3' % self.total_energy_density
+                
