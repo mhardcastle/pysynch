@@ -45,6 +45,23 @@ class SynchSource(object):
             else:
                 self.rsph=self.arcsec_to_metres(kwargs['asph'])
             self.volume=4*PI*self.rsph**3.0/3.0
+        elif type=='cylinder':
+            if 'lcyl' in kwargs:
+                self.lcyl=kwargs['lcyl']
+                sefl.rcyl=kwargs['rcyl']
+            else:
+                self.lcyl=self.arcsec_to_metres(kwargs['alcyl'])
+                self.rcyl=self.arcsec_to_metres(kwargs['arcyl'])
+            self.volume=PI*self.rcyl**2.0*self.lcyl
+        elif type=='ellipsoid':
+            if 'major' in kwargs:
+                self.major=kwargs['major']
+                self.minor=kwargs['minor']
+            else:
+                self.major=self.arcsec_to_metres(kwargs['amajor'])
+                self.minor=self.arcsec_to_metres(kwargs['aminor'])
+            self.volume=PI*self.minor**2.0*self.major/6.0
+
         else:
             raise NotImplementedError('geometry '+type)
 
@@ -140,16 +157,94 @@ class SynchSource(object):
 
             self.B=bfield
             self.synchnorm=norm
-            self.electron_energy_density=synch.intene(norm)
+            self.electron_energy_density=norm*ed/eln
             self.bfield_energy_density=bed
             self.total_energy_density=self.electron_energy_density+self.bfield_energy_density
+        elif method=='minimum_energy':
+            bmin,bmax=kwargs['brange']
+            if self.verbose: print 'Finding the B-field that minimizes B^2/mu_0  + %f * total electron energy' % zeta
+            bfield=bmin
+            bed=bfield**2.0/(2.0*MU_0)
+            el=synch.emiss(eln,bfield,nu)
+            norm=(wem/el)
+            el=bed+zeta*norm*ed
+            if self.verbose: print "Lower B value total energy density is %g J m^-3" % el
+
+            bfield=bmax;
+            bed=bfield**2.0/(2.0*MU_0)
+            eu=synch.emiss(eln,bfield,nu)
+            norm=(wem/eu)
+            eu=bed+zeta*norm*ed
+            if self.verbose: print "Upper B value total energy density is %g J m^-3" % eu
+
+            # pick an initial central point using the golden ratio -- in log space 
+
+            GR=0.61803399
+            GC=(1.0-GR)
+            TOL=1.0e-6
+            bfield=np.exp(np.log(bmin)+GC*(np.log(bmax/bmin)))
+            if self.verbose: print "Initial midpoint is %g T" % bfield
+            bed=bfield**2.0/(2.0*MU_0)
+            emid=synch.emiss(eln,bfield,nu)
+            norm=(wem/emid)
+            emid=bed+zeta*norm*ed
+            if self.verbose: print "Mid-point total energy density is %g J m^-3" % emid
+            if emid>eu or emid>el:
+                raise RuntimeError("Not bracketing a minimum; can't search.")
+
+            b0=np.log(bmin)
+            b3=np.log(bmax)
+
+            b1=np.log(bfield);
+            b2=b1+GC*(b3-b1);
+            f1=emid
+            bfield=np.exp(b2)
+            bed=bfield**2.0/(2.0*MU_0)
+            emid=synch.emiss(eln,bfield,nu);
+            norm=(wem/emid)
+            f2=bed+zeta*norm*ed
+            while (abs(b3-b0)>TOL*(abs(b1)+abs(b2))):
+                if (f2<f1):
+                    b0=b1
+                    b1=b2
+                    b2=GR*b1+GC*b3
+                    f1=f2
+                    bfield=np.exp(b2)
+                    bed=bfield**2.0/(2.0*MU_0)
+                    emid=synch.emiss(eln,bfield,nu)
+                    norm=(wem/emid)
+                    f2=bed+zeta*norm*ed
+                else:
+                    b3=b2
+                    b2=b1
+                    b1=GR*b2+GC*b0
+                    f2=f1
+                    bfield=np.exp(b1)
+                    bed=bfield**2.0/(2.0*MU_0)
+                    emid=synch.emiss(eln,bfield,nu)
+                    norm=(wem/emid)
+                    f1=bed+zeta*norm*ed
+
+            if (f1<f2):
+                bfield=np.exp(b1)
+            else:
+                bfield=np.exp(b2)
+            if self.verbose: print "Minimum-energy B-field is %g T" % bfield
+            bed=bfield**2.0/(2.0*MU_0)
+            self.B=bfield
+            emid=synch.emiss(eln,bfield,nu)
+            norm=(wem/emid)
+            self.synchnorm=norm*eln
+            self.electron_energy_density=norm*ed
+            self.bfield_energy_density=bed
+            self.total_energy_density=zeta*self.electron_energy_density+self.bfield_energy_density
         else:
             raise NotImplementedError('method '+method)
             
         if self.verbose:
             print 'Field fit %g T' % self.B
             print 'B-field energy density is %g J/m^3' % self.bfield_energy_density
-            print 'Normalized total number density of electrons is %g m^-3' % synch.intne(norm)
+            print 'Normalized total number density of electrons is %g m^-3' % synch.intne(self.synchnorm)
             print 'Electron energy density is %g J/m^3' % self.electron_energy_density
             print 'Total energy density is %g J/m^3' % self.total_energy_density
                 
