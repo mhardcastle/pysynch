@@ -26,7 +26,7 @@ class SynchSource(object):
         self._init_distances()
         return theta*self.scale*1000.0*PARSEC
     
-    def __init__(self,type='sphere',cosmology=None,z=0,cmbtemp=2.73,verbose=False,gmin=None,gmax=None,injection=None,spectrum='powerlaw',**kwargs):
+    def __init__(self,type='sphere',cosmology=None,z=0,cmbtemp=2.725,verbose=False,gmin=None,gmax=None,injection=None,spectrum='powerlaw',**kwargs):
         if gmin is None or gmax is None or injection is None:
             raise RuntimeError('gmin, gmax, injection must be specified')
         self.verbose=verbose
@@ -123,7 +123,17 @@ class SynchSource(object):
         ed=synch.intene(eln)
         if self.verbose: print 'Energy density (one electron) is %g J m^-3' % ed
         if self.verbose: print 'Wanted emission rate at %g Hz: %g W/Hz/m^3' % (nu,wem)
-        if method=='equipartition':
+        if method=='fixed':
+            bfield=kwargs['bfield']
+            bed=bfield**2.0/(2.0*MU_0)
+            eo=synch.emiss(eln,bfield,nu)
+            norm=(wem/eo)*eln
+            self.B=bfield
+            self.synchnorm=norm
+            self.electron_energy_density=norm*ed/eln
+            self.bfield_energy_density=bed
+            self.total_energy_density=self.electron_energy_density+self.bfield_energy_density
+        elif method=='equipartition':
             bmin,bmax=kwargs['brange']
             if self.verbose: print 'Finding the B-field such that %f * B^2/mu_0 = total electron energy' % zeta
 
