@@ -130,19 +130,18 @@ Initialization sets the instance attribute `volume` (in m^3)
   possible methods using an observation of flux density `flux` at
   observer-frame frequency `frequency`.
 
-Possible normalization methods include:
+  Possible normalization methods include:
 
-** 'fixed': a parameter `bfield` must be passed -- the electron normalization
-  is then adjusted to produce the observed emission at that field strength.
+  * 'fixed': a parameter `bfield` must be passed -- the electron normalization
+    is then adjusted to produce the observed emission at that field strength.
 
-** 'equipartition': Find the equipartition field within a given range.
-   A tuple `brange` of the minimum and maximum field
-   strengths to use must be passed to the method.
+  * 'equipartition': Find the equipartition field within a given range.
+    A tuple `brange` of the minimum and maximum field
+    strengths to use must be passed to the method.
 
-** 'minimum_energy': Find the minimum-energy field within a given range.
-   A tuple `brange` of the minimum and maximum field
-   strengths to use must be passed to the method.
+  * 'minimum_energy': Find the minimum-energy field within a given range.
+    A tuple `brange` of the minimum and maximum field
+    strengths to use must be passed to the method.
 
   normalize sets the instance attributes `B`, `bfield_energy_density`,
   `electron_energy_density` and `total_energy_density`
-
