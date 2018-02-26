@@ -86,7 +86,7 @@ spectrum='powerlaw, cosmology=my_cosmology, asph=10)
 
 `cosmology` here is an astropy cosmology instance which provides the
 methods `arcsec_per_kpc_proper`, `arcsec_to_metres` and
-`cosm.luminosity_distance`. The redshift z will be used with this instance.
+`cosm.luminosity_distance`. The redshift `z` will be used with this instance.
 
 Source types may be 'sphere', 'cylinder' or 'ellipsoid'. Each has its
 own parameters for sizes. Either physical or angular sizes may be
@@ -124,7 +124,9 @@ Initialization sets the instance attribute `volume` (in m^3)
 
 * `emiss(freq)`: calculate the emissivity at a frequency or a list/array of
  frequencies (in the rest frame of the object) and return results. The
- `B` attribute of the instance must be set.
+ `B` attribute of the instance must be set. `emiss` uses the
+ `synchnorm` attribute which will be set to an arbitrary value unless
+ `normalize` has been called.
 
 * `normalize(frequency, flux, method)`: set the synchrotron normalization by one of several
   possible methods using an observation of flux density `flux` at
@@ -143,5 +145,5 @@ Initialization sets the instance attribute `volume` (in m^3)
     A tuple `brange` of the minimum and maximum field
     strengths to use must be passed to the method.
 
-  normalize sets the instance attributes `B`, `bfield_energy_density`,
+  normalize sets the instance attributes `B`, `synchnorm`, `bfield_energy_density`,
   `electron_energy_density` and `total_energy_density`
