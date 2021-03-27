@@ -1,6 +1,5 @@
 from __future__ import division
 from __future__ import print_function
-from past.utils import old_div
 from synchro import SynchSource
 from astropy.cosmology import WMAP9
 from astropy.cosmology import FlatLambdaCDM
@@ -29,7 +28,7 @@ for i,b in enumerate(bvals):
     s.normalize(normfreq,normflux,method='fixed',bfield=b)
     energy[i]=s.total_energy_density
 
-plt.plot(bvals,old_div(energy,np.min(energy)))
+plt.plot(bvals,energy/np.min(energy))
 plt.xscale('log')
 plt.yscale('log')
 

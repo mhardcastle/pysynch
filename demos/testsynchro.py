@@ -1,6 +1,5 @@
 from __future__ import division
 from __future__ import print_function
-from past.utils import old_div
 from synchro import SynchSource
 from astropy.cosmology import WMAP9
 from astropy.cosmology import FlatLambdaCDM
@@ -34,7 +33,7 @@ for method in ['fixed', 'minimum_energy', 'equipartition']:
     emiss_ic=s.cmb_ic_emiss(freqs2)
     plt.plot(freqs2,emiss_ic,ls=':',label=method+' IC')
 
-plt.scatter(normfreq*(1+z),old_div(normflux*1e-26*s.fnorm,s.volume/s.dfactor),color='red',label='data')
+plt.scatter(normfreq*(1+z),normflux*1e-26*s.fnorm/s.volume/s.dfactor,color='red',label='data')
 plt.xlabel('Rest-frame frequency (Hz)')
 plt.ylabel('Volume emissivity (W m**-3 Hz**-1)')
 plt.legend()

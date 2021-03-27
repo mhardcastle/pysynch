@@ -1,7 +1,6 @@
 from __future__ import division
 from __future__ import print_function
 from builtins import object
-from past.utils import old_div
 import numpy as np
 
 PI=np.pi
@@ -24,7 +23,7 @@ class SynchSource(object):
             self.scale=1.0/(self.cosm.arcsec_per_kpc_proper(self.z).value)
         # flux normalization
         if self.fnorm is None:
-            self.fnorm=old_div(4*PI*(1e6*PARSEC*self.cosm.luminosity_distance(self.z).value)**2.0,(1.0+self.z))
+            self.fnorm=4*PI*(1e6*PARSEC*self.cosm.luminosity_distance(self.z).value)**2.0/(1.0+self.z)
     
     def arcsec_to_metres(self,theta):
         self._init_distances()
@@ -124,8 +123,8 @@ class SynchSource(object):
 
     def normalize(self,freq,flux,zeta=1.0,method='equipartition',tol=1e-6,**kwargs):
         self._init_distances()
-        nu=old_div(freq*(1+self.z),self.doppler)
-        wem=old_div(flux*JANSKY*self.fnorm,self.volume/self.dfactor)
+        nu=freq*(1+self.z)/self.doppler
+        wem=flux*JANSKY*self.fnorm/self.volume/self.dfactor
         # compute single-electron norm and energy density
         self._setsynch()
         tno=synch.intne(1)
@@ -137,12 +136,12 @@ class SynchSource(object):
         if self.verbose: print('Wanted emission rate at %g Hz: %g W/Hz/m^3' % (nu,wem))
         if method=='fixed':
             bfield=kwargs['bfield']
-            bed=old_div(bfield**2.0,(2.0*MU_0))
+            bed=bfield**2.0/(2.0*MU_0)
             eo=synch.emiss(eln,bfield,nu)
-            norm=(old_div(wem,eo))*eln
+            norm=(wem/eo)*eln
             self.B=bfield
             self.synchnorm=norm
-            self.electron_energy_density=old_div(norm*ed,eln)
+            self.electron_energy_density=norm*ed/eln
             self.bfield_energy_density=bed
             self.total_energy_density=self.electron_energy_density+self.bfield_energy_density
         elif method=='equipartition':
@@ -151,14 +150,14 @@ class SynchSource(object):
 
             # check the bounds
             bfield=bmax
-            bed=old_div(bfield**2.0,(2.0*MU_0))
-            norm=eln*(old_div(zeta*bed,ed))
+            bed=bfield**2.0/(2.0*MU_0)
+            norm=eln*zeta*bed/ed
 
             eu=synch.emiss(norm,bfield,nu);
       
             bfield=bmin;
-            bed=old_div(bfield**2.0,(2.0*MU_0))
-            norm=eln*(old_div(zeta*bed,ed))
+            bed=bfield**2.0/(2.0*MU_0)
+            norm=eln*zeta*bed/ed
             el=synch.emiss(norm,bfield,nu)
       
             if self.verbose: print("Emission rate limits are %g -- %g W Hz^-1 m^-3" % (el,eu))
@@ -167,10 +166,10 @@ class SynchSource(object):
                 raise RuntimeError('Not bracketing a root; can\'t search')
 
             emid=0
-            while (old_div((abs(emid-wem)),wem))>tol:
+            while (abs(emid-wem)/wem)>tol:
                 bfield=np.exp((np.log(bmin)+np.log(bmax))/2.0)
-                bed=old_div(bfield**2.0,(2.0*MU_0))
-                norm=eln*(old_div(zeta*bed,ed))
+                bed=bfield**2.0/(2.0*MU_0)
+                norm=eln*zeta*bed/ed
                 emid=synch.emiss(norm,bfield,nu)
                 if wem<emid:
                     bmax=bfield
@@ -179,23 +178,23 @@ class SynchSource(object):
 
             self.B=bfield
             self.synchnorm=norm
-            self.electron_energy_density=old_div(norm*ed,eln)
+            self.electron_energy_density=norm*ed/eln
             self.bfield_energy_density=bed
             self.total_energy_density=self.electron_energy_density+self.bfield_energy_density
         elif method=='minimum_energy':
             bmin,bmax=kwargs['brange']
             if self.verbose: print('Finding the B-field that minimizes B^2/mu_0  + %f * total electron energy' % zeta)
             bfield=bmin
-            bed=old_div(bfield**2.0,(2.0*MU_0))
+            bed=bfield**2.0/(2.0*MU_0)
             el=synch.emiss(eln,bfield,nu)
-            norm=(old_div(wem,el))
+            norm=wem/el
             el=bed+zeta*norm*ed
             if self.verbose: print("Lower B value total energy density is %g J m^-3" % el)
 
             bfield=bmax;
-            bed=old_div(bfield**2.0,(2.0*MU_0))
+            bed=bfield**2.0/(2.0*MU_0)
             eu=synch.emiss(eln,bfield,nu)
-            norm=(old_div(wem,eu))
+            norm=wem/eu
             eu=bed+zeta*norm*ed
             if self.verbose: print("Upper B value total energy density is %g J m^-3" % eu)
 
@@ -204,11 +203,11 @@ class SynchSource(object):
             GR=0.61803399
             GC=(1.0-GR)
             TOL=1.0e-6
-            bfield=np.exp(np.log(bmin)+GC*(np.log(old_div(bmax,bmin))))
+            bfield=np.exp(np.log(bmin)+GC*(np.log(bmax/bmin)))
             if self.verbose: print("Initial midpoint is %g T" % bfield)
-            bed=old_div(bfield**2.0,(2.0*MU_0))
+            bed=bfield**2.0/(2.0*MU_0)
             emid=synch.emiss(eln,bfield,nu)
-            norm=(old_div(wem,emid))
+            norm=wem/emid
             emid=bed+zeta*norm*ed
             if self.verbose: print("Mid-point total energy density is %g J m^-3" % emid)
             if emid>eu or emid>el:
@@ -221,9 +220,9 @@ class SynchSource(object):
             b2=b1+GC*(b3-b1);
             f1=emid
             bfield=np.exp(b2)
-            bed=old_div(bfield**2.0,(2.0*MU_0))
+            bed=bfield**2.0/(2.0*MU_0)
             emid=synch.emiss(eln,bfield,nu);
-            norm=(old_div(wem,emid))
+            norm=wem/emid
             f2=bed+zeta*norm*ed
             while (abs(b3-b0)>TOL*(abs(b1)+abs(b2))):
                 if (f2<f1):
@@ -232,9 +231,9 @@ class SynchSource(object):
                     b2=GR*b1+GC*b3
                     f1=f2
                     bfield=np.exp(b2)
-                    bed=old_div(bfield**2.0,(2.0*MU_0))
+                    bed=bfield**2.0/(2.0*MU_0)
                     emid=synch.emiss(eln,bfield,nu)
-                    norm=(old_div(wem,emid))
+                    norm=wem/emid
                     f2=bed+zeta*norm*ed
                 else:
                     b3=b2
@@ -242,9 +241,9 @@ class SynchSource(object):
                     b1=GR*b2+GC*b0
                     f2=f1
                     bfield=np.exp(b1)
-                    bed=old_div(bfield**2.0,(2.0*MU_0))
+                    bed=bfield**2.0/(2.0*MU_0)
                     emid=synch.emiss(eln,bfield,nu)
-                    norm=(old_div(wem,emid))
+                    norm=wem/emid
                     f1=bed+zeta*norm*ed
 
             if (f1<f2):
@@ -252,10 +251,10 @@ class SynchSource(object):
             else:
                 bfield=np.exp(b2)
             if self.verbose: print("Minimum-energy B-field is %g T" % bfield)
-            bed=old_div(bfield**2.0,(2.0*MU_0))
+            bed=bfield**2.0/(2.0*MU_0)
             self.B=bfield
             emid=synch.emiss(eln,bfield,nu)
-            norm=(old_div(wem,emid))
+            norm=wem/emid
             self.synchnorm=norm*eln
             self.electron_energy_density=norm*ed
             self.bfield_energy_density=bed
