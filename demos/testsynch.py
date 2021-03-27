@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from builtins import range
 import synch
 import numpy as np
 import matplotlib.pyplot as plt

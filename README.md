@@ -1,7 +1,7 @@
 # pysynch
 Python interface to synchrotron libraries
 
-This provides an interface to the C synchrotron libraries used in Hardcastle et al (1998) and subsequent work.
+This provides an interface to the C synchrotron libraries used by Hardcastle et al (1998) and insubsequent work.
 
 ## installation
 
@@ -19,7 +19,7 @@ Then you should be able to
 import synch
 ```
 
-Some test code (e.g. `testsynch.py`, `test_ic.py`, `test_loss.py`) is provided.
+Some test code (e.g. `testsynch.py`, `test_ic.py`, `test_loss.py`) is provided in the `demos` directory.
 
 ## warning
 
@@ -58,15 +58,14 @@ Lorentz factor for electron energy.
 * `intne(norm)` and `intene(norm)`: integrate the electron energy
   spectrum over the energy range.
 
-## synchro.py
+## synchro
 
-This code under development provides some of the functionality of the
-synch code of Hardcastle et al (1998). It allows the user to set up
-one or more Python instances which represent real synchrotron/IC sources
-and carry out certain operations on them.
+This code provides some of the functionality of the synch code of
+Hardcastle et al (1998). It allows the user to set up one or more
+Python instances which represent real synchrotron/IC sources and carry
+out certain operations on them. SSC parts of the code are not yet implemented. 
 
-To use it you need to ensure that `synchro.py` is on your PYTHONPATH
-and then do
+To use it install the package as above and then
 
 ```
 from synchro import SynchSource
@@ -122,9 +121,15 @@ Initialization sets the instance attribute `volume` (in m^3)
 
 ### instance methods
 
-* `emiss(freq)`: calculate the emissivity at a frequency or a list/array of
+* `emiss(freq)`: calculate the synchrotron emissivity at a frequency or a list/array of
  frequencies (in the rest frame of the object) and return results. The
  `B` attribute of the instance must be set. `emiss` uses the
+ `synchnorm` attribute which will be set to an arbitrary value unless
+ `normalize` has been called.
+
+* `cmb_ic_emiss(freq)`: calculate the CMB IC emissivity at a frequency or a list/array of
+ frequencies (in the rest frame of the object) and return results. The
+ `z` attribute of the instance must be set. `cmb_ic_emiss` uses the
  `synchnorm` attribute which will be set to an arbitrary value unless
  `normalize` has been called.
 

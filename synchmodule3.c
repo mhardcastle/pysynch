@@ -1,3 +1,4 @@
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
 //#define DEBUG
@@ -581,32 +582,40 @@ static PyMethodDef SynchMethods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
-PyMODINIT_FUNC initsynch(void) {
+//(void)Py_InitModule("synch", SynchMethods);
+static struct PyModuleDef synch = {
+PyModuleDef_HEAD_INIT,
+"synch", /* name of module */
+NULL, /* module documentation, may be NULL */
+-1, /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
+SynchMethods
+};
 
-  (void)Py_InitModule("synch", SynchMethods);
+PyMODINIT_FUNC PyInit_synch(void)
+{
+// do some initialization
 
-  // do some initialization
+w1=gsl_integration_workspace_alloc(GSL_WSIZE);
+w2=gsl_integration_workspace_alloc(GSL_WSIZE);
+gsl_set_error_handler_off(); // to avoid abort
+gsl_epsilon=1e-3;
+gsl_quiet=1;
 
-  w1=gsl_integration_workspace_alloc(GSL_WSIZE);
-  w2=gsl_integration_workspace_alloc(GSL_WSIZE);
-  gsl_set_error_handler_off(); // to avoid abort
-  gsl_epsilon=1e-3;
-  gsl_quiet=1;
+fx=calloc(xls,sizeof(double));
+#ifdef DEBUG
+printf("running makefx\n");
+#endif
+makefx();
 
-  fx=calloc(xls,sizeof(double));
-  #ifdef DEBUG
-      printf("running makefx\n");
-  #endif
-  makefx();
+// these numeric parameters and the spectral function to be used are
+// changeable by the user: set some defaults
 
-  // these numeric parameters and the spectral function to be used are
-  // changeable by the user: set some defaults
+gmin=10;
+gmax=100000;
+set_minmax_globals();
+power=2.2;
 
-  gmin=10;
-  gmax=100000;
-  set_minmax_globals();
-  power=2.2;
+set_simple_powerlaw();
 
-  set_simple_powerlaw();
-  
-}
+return PyModule_Create(&synch);
+};
