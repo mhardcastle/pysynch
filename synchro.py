@@ -121,7 +121,9 @@ class SynchSource(object):
             r[...]=synch.cmb_ic_emiss(self.synchnorm,f,self.z)
         return it.operands[1]
 
-    def normalize(self,freq,flux,zeta=1.0,method='equipartition',tol=1e-6,**kwargs):
+    def normalize(self,freq,flux,zeta=1.0,method=None,tol=1e-6,**kwargs):
+        if method is None:
+            raise RuntimeError('Method must be specified with method keyword.')
         self._init_distances()
         nu=freq*(1+self.z)/self.doppler
         wem=flux*JANSKY*self.fnorm/self.volume/self.dfactor
@@ -153,9 +155,9 @@ class SynchSource(object):
             bed=bfield**2.0/(2.0*MU_0)
             norm=eln*zeta*bed/ed
 
-            eu=synch.emiss(norm,bfield,nu);
+            eu=synch.emiss(norm,bfield,nu)
       
-            bfield=bmin;
+            bfield=bmin
             bed=bfield**2.0/(2.0*MU_0)
             norm=eln*zeta*bed/ed
             el=synch.emiss(norm,bfield,nu)
@@ -191,7 +193,7 @@ class SynchSource(object):
             el=bed+zeta*norm*ed
             if self.verbose: print("Lower B value total energy density is %g J m^-3" % el)
 
-            bfield=bmax;
+            bfield=bmax
             bed=bfield**2.0/(2.0*MU_0)
             eu=synch.emiss(eln,bfield,nu)
             norm=wem/eu
@@ -216,12 +218,12 @@ class SynchSource(object):
             b0=np.log(bmin)
             b3=np.log(bmax)
 
-            b1=np.log(bfield);
-            b2=b1+GC*(b3-b1);
+            b1=np.log(bfield)
+            b2=b1+GC*(b3-b1)
             f1=emid
             bfield=np.exp(b2)
             bed=bfield**2.0/(2.0*MU_0)
-            emid=synch.emiss(eln,bfield,nu);
+            emid=synch.emiss(eln,bfield,nu)
             norm=wem/emid
             f2=bed+zeta*norm*ed
             while (abs(b3-b0)>TOL*(abs(b1)+abs(b2))):

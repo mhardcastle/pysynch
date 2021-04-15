@@ -133,7 +133,7 @@ Initialization sets the instance attribute `volume` (in m^3)
  `synchnorm` attribute which will be set to an arbitrary value unless
  `normalize` has been called.
 
-* `normalize(frequency, flux, method)`: set the synchrotron normalization by one of several
+* `normalize(frequency, flux, method='METHOD')`: set the synchrotron normalization by one of several
   possible methods using an observation of flux density `flux` at
   observer-frame frequency `frequency`.
 
