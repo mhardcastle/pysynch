@@ -80,7 +80,7 @@ object, e.g.
 
 ```
 ss=SynchSource(type='sphere', gmin=10, gmax=100000, z=0.1, injection=2.0,
-spectrum='powerlaw, cosmology=my_cosmology, asph=10)
+spectrum='powerlaw', cosmology=my_cosmology, asph=10)
 ```
 
 `cosmology` here is an astropy cosmology instance which provides the
