@@ -1,7 +1,9 @@
 # pysynch
 Python interface to synchrotron libraries
 
-This provides an interface to the C synchrotron libraries used by Hardcastle et al (1998) and insubsequent work.
+This provides an interface to the C synchrotron libraries used by
+Hardcastle et al (1998) and in subsequent work. It depends on the
+integration routines in the GNU Scientific Library (GSL).
 
 ## installation
 
