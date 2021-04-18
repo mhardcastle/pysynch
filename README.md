@@ -2,8 +2,10 @@
 Python interface to synchrotron libraries
 
 This provides an interface to the C synchrotron libraries used by
-Hardcastle et al (1998) and in subsequent work. It depends on the
-integration routines in the GNU Scientific Library (GSL).
+Hardcastle et al (1998) and in subsequent work, and python wrappers
+for some basic functions (synchro, see below). pysynch depends on the
+integration routines in the GNU Scientific Library (GSL) and synchro
+depends on numpy and astropy as well.
 
 ## installation
 
