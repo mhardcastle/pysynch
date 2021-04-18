@@ -8,5 +8,11 @@ module1 = Extension('synch',
 setup (name = 'synchrotron',
        version = '0.02',
        description = 'Synchrotron spectra in python3',
+       author = 'Martin Hardcastle',
+       author_email = 'mjh@extragalactic.info',
+       install_requires = [
+           'astropy',
+           'numpy',
+       ],
        ext_modules = [module1],
        py_modules=['synchro'])

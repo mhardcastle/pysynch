@@ -64,6 +64,7 @@ This code provides some of the functionality of the synch code of
 Hardcastle et al (1998). It allows the user to set up one or more
 Python instances which represent real synchrotron/IC sources and carry
 out certain operations on them. SSC parts of the code are not yet implemented. 
+The code depends on numpy and (indirectly) on astropy.
 
 To use it install the package as above and then
 
@@ -83,7 +84,7 @@ ss=SynchSource(type='sphere', gmin=10, gmax=100000, z=0.1, injection=2.0,
 spectrum='powerlaw', cosmology=my_cosmology, asph=10)
 ```
 
-`cosmology` here is an astropy cosmology instance which provides the
+`cosmology` here is an astropy cosmology instance, or something equivalent, which provides the
 methods `arcsec_per_kpc_proper`, `arcsec_to_metres` and
 `cosm.luminosity_distance`. The redshift `z` will be used with this instance.
 
@@ -109,7 +110,9 @@ parameters to pass to SynchSource:
   change in power-law index
 
 * aged: `age` and `ageb`, the age (in seconds) and ageing field (in
-  T).
+  T), and optionally `cmbage` which must evaluate to `True` if you
+  wish to include inverse-Compton losses at the redshift of the source
+  in the ageing calculation.
 
 Set the magnetic field in the call to SynchSource with the `B` keyword
 (or set the B attribute of the instance).
@@ -151,4 +154,5 @@ Initialization sets the instance attribute `volume` (in m^3)
     strengths to use must be passed to the method.
 
   normalize sets the instance attributes `B`, `synchnorm`, `bfield_energy_density`,
-  `electron_energy_density` and `total_energy_density`
+  `electron_energy_density` and `total_energy_density`, which are
+  stored in SI units.

@@ -404,7 +404,7 @@ double cmb_ic_outer_int(double e) {
 
 double cmb_ic_emissivity(double n0, double nu, double redshift) {
   double emax,emin,v;
-  T=2.735*(1.0+redshift);
+  T=2.725*(1.0+redshift);
   #ifdef DEBUG
   printf("Temperature of the CMB is %f K\n",T);
   #endif

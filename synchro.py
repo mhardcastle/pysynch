@@ -8,6 +8,8 @@ PARSEC=3.08568e16
 JANSKY=1.0e-26
 V_C=299792458.0
 MU_0=4.0e-7*PI
+PLANCK=6.6260755e-34
+BOLTZMANN=1.380658e-23
 
 import synch
 
@@ -30,16 +32,18 @@ class SynchSource(object):
         return theta*self.scale*1000.0*PARSEC
     
     def __init__(self,type='sphere',cosmology=None,z=0,cmbtemp=2.725,verbose=False,gmin=None,gmax=None,injection=None,spectrum='powerlaw',**kwargs):
+        
         if gmin is None or gmax is None or injection is None:
             raise RuntimeError('gmin, gmax, injection must be specified')
         self.verbose=verbose
         # sort out cosmology. This should be an astropy cosmology object
         self.cosm=cosmology
         # these are set up so we can easily apply a fixed
-        # non-cosmological distance later, as in synch
+        # non-cosmological istance later, as in synch
         self.scale=None
         self.fnorm=None
         self.z=z
+        self.temp=cmbtemp*(1+z)
         self.type='type'
         # set up the volume
         if type=='sphere':
@@ -91,6 +95,12 @@ class SynchSource(object):
         elif spectrum=='aged':
             self.age=kwargs['age']
             self.ageb=kwargs['ageb']
+            if 'cmbage' in kwargs and kwargs['cmbage']:
+                cmbb=np.sqrt(8.0*PI**5*(self.temp*BOLTZMANN)**4.0/
+                          (15*PLANCK*PLANCK*PLANCK*V_C*V_C*V_C)*(2*MU_0))
+                self.ageb=np.sqrt(self.ageb**2.0+cmbb**2.0)
+                
+
         else:
             raise NotImplementedError('spectrum '+spectrum)
             
