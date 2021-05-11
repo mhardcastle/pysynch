@@ -157,7 +157,7 @@ Initialization sets the instance attribute `volume` (in m^3)
     A tuple `brange` of the minimum and maximum field
     strengths to use must be passed to the method.
 
-  For methods 'equipartition' and 'minimum_energy' the parameter 'zeta' is one plus the ratio of energy density in radiating to non-radiating particles (often denoted kappa). The default value is 1.0, i.e. there are no non-radiating particles. Values < 1.0 are not physically meaningful. For true minimum energy zeta should always be left at the default value of 1.0.
+  For methods 'equipartition' and 'minimum_energy' the parameter `zeta` is one plus the ratio of energy density in radiating to non-radiating particles (often denoted kappa). The default value is 1.0, i.e. there are no non-radiating particles. Values < 1.0 are not physically meaningful. For true minimum energy `zeta` should always be left at the default value of 1.0.
 
   normalize sets the instance attributes `B`, `synchnorm`, `bfield_energy_density`,
   `electron_energy_density` and `total_energy_density`, which are
