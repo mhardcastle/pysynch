@@ -158,7 +158,7 @@ class SynchSource(object):
             self.total_energy_density=self.electron_energy_density+self.bfield_energy_density
         elif method=='equipartition':
             bmin,bmax=kwargs['brange']
-            if self.verbose: print('Finding the B-field such that %f * B^2/mu_0 = total electron energy' % zeta)
+            if self.verbose: print('Finding the B-field such that B^2/mu_0 = %f * total electron energy' % zeta)
 
             # check the bounds
             bfield=bmax
@@ -169,7 +169,7 @@ class SynchSource(object):
       
             bfield=bmin
             bed=bfield**2.0/(2.0*MU_0)
-            norm=eln*zeta*bed/ed
+            norm=eln*bed/(ed*zeta)
             el=synch.emiss(norm,bfield,nu)
       
             if self.verbose: print("Emission rate limits are %g -- %g W Hz^-1 m^-3" % (el,eu))
@@ -181,7 +181,7 @@ class SynchSource(object):
             while (abs(emid-wem)/wem)>tol:
                 bfield=np.exp((np.log(bmin)+np.log(bmax))/2.0)
                 bed=bfield**2.0/(2.0*MU_0)
-                norm=eln*zeta*bed/ed
+                norm=eln*bed/(ed*zeta)
                 emid=synch.emiss(norm,bfield,nu)
                 if wem<emid:
                     bmax=bfield
@@ -192,7 +192,7 @@ class SynchSource(object):
             self.synchnorm=norm
             self.electron_energy_density=norm*ed/eln
             self.bfield_energy_density=bed
-            self.total_energy_density=self.electron_energy_density+self.bfield_energy_density
+            self.total_energy_density=zeta*self.electron_energy_density+self.bfield_energy_density
         elif method=='minimum_energy':
             bmin,bmax=kwargs['brange']
             if self.verbose: print('Finding the B-field that minimizes B^2/mu_0  + %f * total electron energy' % zeta)
