@@ -193,11 +193,21 @@ s.normalize(4.525e9,144.2,method='equipartition',brange=(1e-10,1e-7))
 print(s.B)
 ```
 
+We see that this changes (increases) the magnetic field to 4.5 nT -- which is expected since the normalizing frequency is above the break we have put in.
+
 We find the total energy density in the lobes in a similar way
 
 ```
 print(s.total_energy_density)
 ```
+
+to get a value of 1.6e-11 J/m**3. The total pressure in Pa is given by dividing by 3:
+
+```
+print(s.total_energy_density/3)
+```
+
+so the equipartition pressure in the lobes is 5.4e-12 Pa.
 
 We can plot the radio spectral luminosity as a function of (source frame) frequency:
 
