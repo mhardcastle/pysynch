@@ -5,7 +5,8 @@ This provides an interface to the C synchrotron libraries used by
 Hardcastle et al (1998) and in subsequent work, and python wrappers
 for some basic functions (synchro, see below). pysynch depends on the
 integration routines in the GNU Scientific Library (GSL) and synchro
-depends on numpy and astropy as well.
+depends on numpy and (indirectly) on astropy as well. Building these
+modules is only tested on Linux but may work on Macs.
 
 ## installation
 
@@ -76,7 +77,7 @@ To use it install the package as above and then
 from synchro import SynchSource
 ```
 
-Examples of its use are in `testsynchro.py`.
+Examples of its use are in `demos/testsynchro.py`.
 
 ### creating an instance
 
@@ -124,7 +125,7 @@ Set the magnetic field in the call to SynchSource with the `B` keyword
 Set `verbose=True` to get printed reports of what the various methods
 do as they happen.
 
-Initialization sets the instance attribute `volume` (in m^3)
+Initialization sets the instance attribute `volume` (in m^3), `scale` (in kpc/arcsec) and `fnorm` (the conversion factor between flux density in W/Hz/m**2 and luminosity in W/Hz).
 
 ### instance methods
 
@@ -162,3 +163,66 @@ Initialization sets the instance attribute `volume` (in m^3)
   normalize sets the instance attributes `B`, `synchnorm`, `bfield_energy_density`,
   `electron_energy_density` and `total_energy_density`, which are
   stored in SI units. `total_energy_density` is by definition equal to `bfield_energy_density + zeta * electron_energy_density`.
+
+## synchro tutorial
+
+Suppose we want to estimate the equipartition magnetic field in the E
+lobe of Cygnus A. This source is at a redshift of 0.0565 and we measure a flux of 144.42 Jy at 4.525 GHz. We approximate the shape of the lobe by an ellipse with major axis 50 arcsec and minor axis 30 arcsec. We take the electron spectrum to be a power law with gamma_min=1 and gamma_max=1e5.
+
+```
+from synchro import SynchSource
+from astropy.cosmology import FlatLambdaCDM
+c=FlatLambdaCDM(H0=70, Om0=0.3)
+
+s=SynchSource(type='ellipsoid',gmin=1, gmax=1e5, z=0.0565, injection=2.0, spectrum='powerlaw', cosmology=c, amajor=50, aminor=30)
+
+s.normalize(4.525e9,144.2,method='equipartition',brange=(1e-10,1e-7))
+
+print(s.B)
+```
+
+This gives a magnetic field strength estimate of 4.3 nT. 
+
+Now we decide that we prefer to model with a broken power-law electron spectrum where the energy index steepens from 2 to 3:
+
+```
+s=SynchSource(type='ellipsoid',gmin=1, gmax=1e5, gbreak=6000, dpow=1, z=0.0565, injection=2.0, spectrum='broken', cosmology=c, amajor=50, aminor=30)
+
+s.normalize(4.525e9,144.2,method='equipartition',brange=(1e-10,1e-7))
+
+print(s.B)
+```
+
+We find the total energy density in the lobes in a similar way
+
+```
+print(s.total_energy_density)
+```
+
+We can plot the radio spectral luminosity as a function of (source frame) frequency:
+
+```
+import numpy as np
+import matplotlib.pyplot as plt
+
+frequencies=np.logspace(6,11,100)
+plt.plot(frequencies,s.emiss(frequencies)*s.volume)
+plt.xscale('log')
+plt.yscale('log')
+plt.ylabel('Luminosity (W/Hz)')
+plt.xlabel('Frequency (Hz)')
+plt.show()
+```
+
+Now we decide we want to plot the predicted flux density as a function of observer-frame frequency, labelling the normalizing point:
+
+```
+plt.plot(frequencies,1e26*s.emiss(frequencies*(1+0.0565))*s.volume/s.fnorm)
+plt.xscale('log')
+plt.yscale('log')
+plt.ylabel('Flux (Jy)')
+plt.xlabel('Frequency (Hz)')
+plt.scatter(4.525e9,144.42,color='red')
+plt.show()
+
+```
