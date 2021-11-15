@@ -177,7 +177,7 @@ c=FlatLambdaCDM(H0=70, Om0=0.3)
 
 s=SynchSource(type='ellipsoid',gmin=1, gmax=1e5, z=0.0565, injection=2.0, spectrum='powerlaw', cosmology=c, amajor=50, aminor=30)
 
-s.normalize(4.525e9,144.2,method='equipartition',brange=(1e-10,1e-7))
+s.normalize(4.525e9,144.42,method='equipartition',brange=(1e-10,1e-7))
 
 print(s.B)
 ```
@@ -189,7 +189,7 @@ Now we decide that we prefer to model with a broken power-law electron spectrum 
 ```
 s=SynchSource(type='ellipsoid',gmin=1, gmax=1e5, gbreak=6000, dpow=1, z=0.0565, injection=2.0, spectrum='broken', cosmology=c, amajor=50, aminor=30)
 
-s.normalize(4.525e9,144.2,method='equipartition',brange=(1e-10,1e-7))
+s.normalize(4.525e9,144.42,method='equipartition',brange=(1e-10,1e-7))
 
 print(s.B)
 ```
