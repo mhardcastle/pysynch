@@ -6,7 +6,8 @@ Hardcastle et al (1998) and in subsequent work, and python wrappers
 for some basic functions (synchro, see below). pysynch depends on the
 integration routines in the GNU Scientific Library (GSL) and synchro
 depends on numpy and (indirectly) on astropy as well. Building these
-modules is only tested on Linux but may work on Macs.
+modules has been mostly tested on Linux but it reportedly also works
+on Macs if GSL is installed (e.g. through brew).
 
 ## installation
 

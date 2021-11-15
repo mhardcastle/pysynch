@@ -55,7 +55,7 @@ class SynchSource(object):
         elif type=='cylinder':
             if 'lcyl' in kwargs:
                 self.lcyl=kwargs['lcyl']
-                sefl.rcyl=kwargs['rcyl']
+                self.rcyl=kwargs['rcyl']
             else:
                 self.lcyl=self.arcsec_to_metres(kwargs['alcyl'])
                 self.rcyl=self.arcsec_to_metres(kwargs['arcyl'])
