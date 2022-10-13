@@ -131,7 +131,7 @@ class SynchSource(object):
             r[...]=synch.cmb_ic_emiss(self.synchnorm,f,self.z)
         return it.operands[1]
 
-    def normalize(self,freq,flux,zeta=1.0,method=None,tol=1e-6,**kwargs):
+    def normalize(self,freq,flux,zeta=1.0,method=None,tol=1e-6,maxiter=1000,**kwargs):
         if method is None:
             raise RuntimeError('Method must be specified with method keyword.')
         self._init_distances()
@@ -178,7 +178,9 @@ class SynchSource(object):
                 raise RuntimeError('Not bracketing a root; can\'t search')
 
             emid=0
-            while (abs(emid-wem)/wem)>tol:
+            i=0
+            while (abs(emid-wem)/wem)>tol and i<maxiter:
+                i+=1
                 bfield=np.exp((np.log(bmin)+np.log(bmax))/2.0)
                 bed=bfield**2.0/(2.0*MU_0)
                 norm=eln*bed/(ed*zeta)
@@ -187,6 +189,9 @@ class SynchSource(object):
                     bmax=bfield
                 else:
                     bmin=bfield
+
+            if (i==maxiter):
+                print('*** Warning: maxiter reached in normalization loop ***\n*** Check your results carefully                   ***\n')
 
             self.B=bfield
             self.synchnorm=norm
@@ -214,7 +219,6 @@ class SynchSource(object):
 
             GR=0.61803399
             GC=(1.0-GR)
-            TOL=1.0e-6
             bfield=np.exp(np.log(bmin)+GC*(np.log(bmax/bmin)))
             if self.verbose: print("Initial midpoint is %g T" % bfield)
             bed=bfield**2.0/(2.0*MU_0)
@@ -236,7 +240,9 @@ class SynchSource(object):
             emid=synch.emiss(eln,bfield,nu)
             norm=wem/emid
             f2=bed+zeta*norm*ed
-            while (abs(b3-b0)>TOL*(abs(b1)+abs(b2))):
+            i=0
+            while (abs(b3-b0)>tol*(abs(b1)+abs(b2))) and i<maxiter:
+                i+=1
                 if (f2<f1):
                     b0=b1
                     b1=b2
@@ -258,6 +264,8 @@ class SynchSource(object):
                     norm=wem/emid
                     f1=bed+zeta*norm*ed
 
+            if (i==maxiter):
+                print('*** Warning: maxiter reached in normalization loop ***\n*** Check your results carefully                   ***\n')
             if (f1<f2):
                 bfield=np.exp(b1)
             else:
